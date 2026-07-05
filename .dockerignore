@@ -1,0 +1,57 @@
+# ==============================================================================
+# AI Research Assistant - Docker build context excludes
+# ==============================================================================
+
+# --- Environments & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Version control ---
+.git/
+.gitignore
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# --- ADK / runtime artifacts ---
+*.session.json
+adk_sessions/
+.adk/
+
+# --- Logs & generated output (recreated at runtime inside the image) ---
+logs/
+*.log
+*.log.jsonl
+reports/*.md
+reports/*.pdf
+reports/*.html
+!reports/.gitkeep
+
+# --- Docs & non-runtime files (not needed inside the runtime image) ---
+docs/
+README.md
+SUBMISSION_WRITEUP.md
+DEMO_SCRIPT.md
+tests/
+*.ipynb
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

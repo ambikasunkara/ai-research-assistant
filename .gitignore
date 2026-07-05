@@ -1,0 +1,60 @@
+# --- Environments & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# --- ADK / runtime artifacts ---
+*.session.json
+adk_sessions/
+.adk/
+
+# --- Logs & generated output ---
+logs/
+*.log
+*.log.jsonl
+reports/*.md
+reports/*.pdf
+reports/*.html
+!reports/.gitkeep
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Docker ---
+*.pid
+.env
+.env
+venv/
+.env
+venv/
+__pycache__/
+.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+__pycache__/
+.env

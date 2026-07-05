@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-research-assistant"
+version = "1.0.0"
+description = "AI Research Assistant - a multi-agent research automation system built on Google ADK (Kaggle AI Agents Capstone, Freestyle track)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "AI Research Assistant Team" }
+]
+keywords = ["google-adk", "agents", "llm", "mcp", "research-automation"]
+
+dependencies = [
+    # Google Agent Development Kit - core multi-agent framework
+    "google-adk>=2.3.0",
+    # Model Context Protocol SDK - powers our custom MCP tool server
+    "mcp>=1.2.0",
+    # Web API layer
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    # Settings / configuration management
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.0",
+    "python-dotenv>=1.0.1",
+    # HTTP client used by MCP tools (arXiv, DuckDuckGo, etc.)
+    "httpx>=0.27.0",
+    # XML/Atom parsing for arXiv API responses
+    "feedparser>=6.0.11",
+    # Structured logging for the audit trail
+    "python-json-logger>=2.0.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "black>=24.10.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+]
+
+[project.scripts]
+research-mcp-server = "ai_research_assistant.mcp_server:main"
+research-api = "ai_research_assistant.fast_api_app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

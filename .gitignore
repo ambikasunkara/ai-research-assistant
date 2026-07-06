@@ -1,4 +1,40 @@
-# --- Environments & secrets ---
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+
+# Reports
+reports/
+
+# ADK
+.adk/
+
+# IDE
+.vscode/
+.idea/
+
+# pytest
+.pytest_cache/
+
+# egg-info
+*.egg-info/
+
+# build
+build/
+dist/# --- Environments & secrets ---
 .env
 .env.*
 !.env.example

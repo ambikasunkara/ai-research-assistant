@@ -134,16 +134,7 @@ BEFORE_TOOL_HOOKS = [security_before_tool, audit_before_tool]
 AFTER_TOOL_HOOKS = [audit_after_tool]
 
 
-def initialize_workflow_state(
-    ctx: Context = None,
-    callback_context=None,
-    **kwargs,
-) -> Optional[types.Content]:
-    if callback_context is not None:
-        ctx = callback_context
-
-    if ctx is None:
-        return None
+def initialize_workflow_state(callback_context: Context, **kwargs) -> Optional[types.Content]:
     """
     `before_agent_callback` registered on the top-level orchestrator only.
 
@@ -151,7 +142,12 @@ def initialize_workflow_state(
     with the original research query, a workflow id, and a start timestamp
     *before* any sub-agent runs, so every downstream agent (and the audit
     log) can reference `{research_query}` / `{workflow_id}` consistently.
+
+    NOTE: like every other callback in this project, ADK invokes this as
+    `callback(callback_context=...)` -- keyword-only -- so the parameter
+    must be named `callback_context`, not `ctx`.
     """
+    ctx = callback_context
     if "workflow_id" in ctx.state:
         # Already initialized (e.g. this is a resumed/human-approval turn).
         return None

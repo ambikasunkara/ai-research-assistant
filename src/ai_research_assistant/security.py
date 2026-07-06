@@ -130,14 +130,21 @@ checkpoint = SecurityCheckpoint()
 # --------------------------------------------------------------------------
 
 
-def security_before_agent(callback_context=None, **kwargs):
-    return None
+def security_before_agent(callback_context: Context, **kwargs) -> Optional[types.Content]:
     """
     `before_agent_callback`: screens the latest user message before any
     agent in the workflow graph is allowed to run. Returning a `types.Content`
     here short-circuits the agent entirely and that content is used as the
     agent's "response" instead.
+
+    NOTE: ADK invokes agent-level callbacks as
+    `callback(callback_context=callback_context)` -- a keyword-only call.
+    The parameter here MUST be named `callback_context` (not `ctx`) or ADK
+    raises `TypeError: got an unexpected keyword argument`. `**kwargs` is a
+    defensive catch-all in case ADK passes additional keyword args in a
+    future release.
     """
+    ctx = callback_context
     user_content = getattr(ctx, "user_content", None)
     text = _extract_text(user_content)
     if not text:
@@ -173,16 +180,20 @@ def security_before_agent(callback_context=None, **kwargs):
     return None
 
 
-spdef security_before_model(callback_context=None, **kwargs):
-    print("MODEL HOOK:", callback_context)
-    return None
+def security_before_model(
+    callback_context: Context, llm_request: LlmRequest, **kwargs
+) -> Optional[LlmResponse]:
     """
     `before_model_callback`: last line of defense immediately before a prompt
     is sent to the LLM. Redacts obvious PII from the outgoing request text.
     This does not block the call -- redaction is applied in place via the
     request's `contents`, and the (unmodified) return value of None means
     "proceed with the (mutated) request".
+
+    NOTE: ADK invokes this as
+    `callback(callback_context=..., llm_request=...)` -- both keyword-only.
     """
+    ctx = callback_context
     try:
         for content in getattr(llm_request, "contents", []) or []:
             for part in getattr(content, "parts", []) or []:
@@ -191,7 +202,7 @@ spdef security_before_model(callback_context=None, **kwargs):
     except Exception as exc:  # never let the guardrail itself crash the pipeline
         audit_logger.log_event(
             "SECURITY_ERROR",
-            agent_name=ctx.agent_name,
+            agent_name=getattr(ctx, "agent_name", None),
             severity="ERROR",
             details={"error": str(exc)},
         )
@@ -199,13 +210,19 @@ spdef security_before_model(callback_context=None, **kwargs):
 
 
 def security_before_tool(
-    tool: BaseTool, args: dict[str, Any], ctx: Context
+    tool: BaseTool, args: dict[str, Any], tool_context: Context, **kwargs
 ) -> Optional[dict]:
     """
     `before_tool_callback`: validates arguments before any MCP tool executes.
     Returning a dict here short-circuits the tool call and that dict becomes
     the tool's result instead of actually invoking it.
+
+    NOTE: ADK invokes this as
+    `callback(tool=..., args=..., tool_context=...)` -- all keyword-only.
+    `ToolContext` is the same underlying `Context` class as the agent/model
+    callbacks receive, just under a different parameter name.
     """
+    ctx = tool_context
     is_valid, reason = checkpoint.validate_tool_args(tool.name, args)
     if not is_valid:
         audit_logger.log_event(

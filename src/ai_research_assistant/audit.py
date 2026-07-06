@@ -98,22 +98,28 @@ audit_logger = AuditLogger()
 # --------------------------------------------------------------------------
 # ADK lifecycle callbacks
 #
-# These functions match the exact callback signatures expected by
-# `google.adk.agents.llm_agent.LlmAgent` (and the SequentialAgent /
-# ParallelAgent base class) in ADK 2.x:
+# These functions match the EXACT keyword-only calling convention ADK uses
+# to invoke lifecycle callbacks (verified against google-adk 2.3.x source in
+# google/adk/agents/base_agent.py, google/adk/flows/llm_flows/base_llm_flow.py,
+# and google/adk/flows/llm_flows/functions.py):
 #
-#   before_agent_callback(ctx: Context) -> Optional[types.Content]
-#   after_agent_callback(ctx: Context)  -> Optional[types.Content]
-#   before_tool_callback(tool, args, ctx) -> Optional[dict]
-#   after_tool_callback(tool, args, ctx, tool_response) -> Optional[dict]
-#   before_model_callback(ctx, llm_request) -> Optional[LlmResponse]
+#   before_agent_callback(callback_context=...)            -> Optional[Content]
+#   after_agent_callback(callback_context=...)              -> Optional[Content]
+#   before_tool_callback(tool=..., args=..., tool_context=...)      -> Optional[dict]
+#   after_tool_callback(tool=..., args=..., tool_context=..., tool_response=...) -> Optional[dict]
+#   before_model_callback(callback_context=..., llm_request=...)    -> Optional[LlmResponse]
+#
+# All calls are keyword-only, so the parameter *names* below are not
+# cosmetic -- getting them wrong raises `TypeError: unexpected keyword
+# argument` at runtime the moment ADK invokes the callback. `ToolContext`
+# and `CallbackContext` are both aliases of the same underlying `Context`
+# class in this ADK version, so the attribute access below (`.state`,
+# `.session`, `.agent_name`, `.invocation_id`) is identical either way.
 # --------------------------------------------------------------------------
 
-def audit_before_agent(callback_context=None, **kwargs):
-    if callback_context:
-        print("AUDIT:", callback_context)
-    return None
+def audit_before_agent(callback_context: Context, **kwargs) -> Optional[types.Content]:
     """Logs the start of every agent invocation and stamps a start time in state."""
+    ctx = callback_context
     ctx.state[f"_audit_start_time::{ctx.agent_name}"] = time.monotonic()
     audit_logger.log_event(
         "AGENT_START",
@@ -125,8 +131,9 @@ def audit_before_agent(callback_context=None, **kwargs):
     return None  # returning None lets the agent execute normally
 
 
-def audit_after_agent(ctx: Context) -> Optional[types.Content]:
+def audit_after_agent(callback_context: Context, **kwargs) -> Optional[types.Content]:
     """Logs completion of every agent invocation, including elapsed time."""
+    ctx = callback_context
     start = ctx.state.get(f"_audit_start_time::{ctx.agent_name}")
     elapsed_ms = round((time.monotonic() - start) * 1000, 2) if start else None
     audit_logger.log_event(
@@ -140,9 +147,10 @@ def audit_after_agent(ctx: Context) -> Optional[types.Content]:
 
 
 def audit_before_tool(
-    tool: BaseTool, args: dict[str, Any], ctx: Context
+    tool: BaseTool, args: dict[str, Any], tool_context: Context, **kwargs
 ) -> Optional[dict]:
     """Logs every tool invocation *before* it runs, including its arguments."""
+    ctx = tool_context
     audit_logger.log_event(
         "TOOL_CALL_START",
         session_id=getattr(ctx.session, "id", None),
@@ -157,10 +165,12 @@ def audit_before_tool(
 def audit_after_tool(
     tool: BaseTool,
     args: dict[str, Any],
-    ctx: Context,
+    tool_context: Context,
     tool_response: dict,
+    **kwargs,
 ) -> Optional[dict]:
     """Logs the result of every tool invocation."""
+    ctx = tool_context
     audit_logger.log_event(
         "TOOL_CALL_END",
         session_id=getattr(ctx.session, "id", None),
@@ -172,8 +182,9 @@ def audit_after_tool(
     return None  # do not modify the tool response
 
 
-def audit_before_model(ctx: Context, llm_request: LlmRequest) -> None:
+def audit_before_model(callback_context: Context, llm_request: LlmRequest, **kwargs) -> None:
     """Logs the fact that a model call is about to be made (no payload dump)."""
+    ctx = callback_context
     audit_logger.log_event(
         "MODEL_CALL",
         session_id=getattr(ctx.session, "id", None),
